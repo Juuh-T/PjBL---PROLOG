@@ -1,6 +1,5 @@
 % Para verificar se o aluno já existe:
 aluno_existe(aluno):-
-    norvar(aluno),
     cursou(aluno, _),
     !.
 
