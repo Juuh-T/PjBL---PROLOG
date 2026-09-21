@@ -18,11 +18,11 @@ demo :-
             
         	disciplinas_pendentes(Aluno, Pendente),
             write('Disciplinas pendentes: '),
-            writeln(Pendentes),
+            writeln(Pendente),
             
-        	creditos cursados(Aluno, Creditos),
+        	creditos_cursados(Aluno, Creditos),
             write('Creditos cursdos: '),
-            writeln(Creditos)
+            writeln(Creditos),
         
         	writeln('--------------------------------'),
             nl
