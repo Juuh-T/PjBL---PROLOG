@@ -171,21 +171,39 @@ explícito na Camada 1 (ver Seção 5).
 
 ## 3. Camada 3 — Fecho transitivo e trilhas
 
-### 3.1 Fecho transitivo com caso base = pré-requisito direto
+### 3.1 Fecho transitivo com lista de visitados
 
 ```prolog
-prerequisito_transitivo(D, A) :- prerequisito(D, A).
-prerequisito_transitivo(D, A) :- prerequisito(D, I), prerequisito_transitivo(I, A).
+prerequisito_transitivo(D, A) :-
+    prerequisito_transitivo(D, A, [D]).
+
+prerequisito_transitivo(D, A, _) :-
+    prerequisito(D, A).
+prerequisito_transitivo(D, A, Visitados) :-
+    prerequisito(D, I),
+    \+ memberchk(I, Visitados),
+    prerequisito_transitivo(I, A, [I|Visitados]).
 ```
 
-O caso base é o pré-requisito direto, e a recursão **avança sempre um passo
-pela relação** antes de chamar a si mesma. A recursão é bem fundada sobre uma
-base acíclica: cada chamada recursiva encurta o caminho restante até a raiz da
-cadeia.
+O predicado público tem aridade 2, como o enunciado exige, e delega para um
+auxiliar de aridade 3 que carrega a lista de nós já visitados **no caminho
+atual**.
 
-Colocamos a chamada recursiva **depois** do `prerequisito/2` de propósito. A
-formulação `prerequisito_transitivo(D, I), prerequisito(I, A)` (recursão à
-esquerda) entraria em recursão infinita antes de tocar qualquer fato.
+O caso base é o pré-requisito direto, e a recursão **avança sempre um passo
+pela relação** antes de chamar a si mesma. Colocamos a chamada recursiva
+**depois** do `prerequisito/2` de propósito: a formulação
+`prerequisito_transitivo(D, I), prerequisito(I, A)` (recursão à esquerda)
+entraria em recursão infinita antes de tocar qualquer fato.
+
+**Por que a lista de visitados:** sem ela, a recursão só é bem fundada enquanto
+a base for acíclica — exatamente a hipótese que não se pode assumir, já que o
+próximo predicado existe justamente para detectar base cíclica. Com a lista, a
+busca nunca reentra num nó do caminho corrente, o conjunto de disciplinas é
+finito, e a terminação passa a ser garantida por construção, não por confiança
+nos dados.
+
+Nenhuma solução é perdida numa base acíclica: num DAG, um caminho nunca
+reencontra um nó que já percorreu.
 
 ### 3.2 `existe_ciclo/1` por consulta reflexiva
 
@@ -197,8 +215,10 @@ Uma disciplina que é seu próprio ancestral transitivo caracteriza ciclo na bas
 — dado malformado. A checagem é declarativa e reaproveita o fecho, sem código
 novo.
 
-**Ver a limitação 4.8: com a implementação atual, esse predicado detecta o
-ciclo apenas se a busca terminar.**
+A detecção funciona porque, em qualquer ciclo que contenha `D`, o nó
+imediatamente anterior a `D` na cadeia satisfaz `prerequisito(Anterior, D)`
+pelo caso base — e a lista de visitados garante que a busca chegue até esse nó
+em vez de girar indefinidamente.
 
 ### 3.3 Sem `assert/retract` na simulação da trilha
 
@@ -232,7 +252,8 @@ de 20 disciplinas o custo é irrelevante perto da correção que se ganha.
 ### 3.4 Limite de semestres simulados como rede de segurança
 
 `gerar_trilha/5` carrega um contador `SemestresRestantes` que decresce a cada
-semestre e exige `SemestresRestantes > 0`.
+semestre e exige `SemestresRestantes > 0`. O valor inicial vem do fato
+`max_semestres(12).`, declarado no topo de `trilhas.pl`.
 
 **Por quê:** mesmo com base acíclica e correta, o número de trilhas possíveis
 cresce combinatoriamente (cada semestre é um subconjunto das disciplinas
@@ -240,7 +261,29 @@ liberadas que cabe no teto de créditos). O limite é uma garantia **estrutural*
 de terminação, independente da qualidade dos dados: a busca para porque a
 profundidade acabou, não porque os dados são bem-comportados.
 
-### 3.5 Semestre gerado como subconjunto sob orçamento de créditos
+O valor ficou num fato nomeado, e não literal no corpo da regra, para que a
+rede de segurança seja visível e ajustável sem editar a lógica de busca.
+
+### 3.5 Elegibilidade na trilha usa o fecho transitivo, não o pré-requisito direto
+
+```prolog
+elegivel_agora(Cursadas, Disciplina) :-
+    forall(
+        prerequisito_transitivo(Disciplina, Prerequisito),
+        memberchk(Prerequisito, Cursadas)
+    ).
+```
+
+O enunciado exige que, na trilha, toda disciplina apareça depois de seus
+pré-requisitos **diretos e indiretos**. Checar só os diretos daria o mesmo
+resultado enquanto o histórico de entrada fosse internamente consistente — mas
+os históricos de teste não são (`julia` cursou `modelagem_de_fenomenos_fisicos`
+sem ter cursado `resolucao_de_problemas_de_natureza_discreta`, que é
+pré-requisito dela, o que é realista para quem tem DP e quebra a invariante).
+Usar o fecho torna a checagem correta independentemente da consistência do
+histórico.
+
+### 3.6 Semestre gerado como subconjunto sob orçamento de créditos
 
 `subconjunto_com_credito/3` percorre as disciplinas liberadas e, para cada uma,
 oferece duas alternativas por backtracking: **incluir** (descontando os
@@ -252,99 +295,73 @@ válido, sem gerar-e-testar.
 semestre é um ponto de escolha.
 
 ---
-
 ## 4. Limitações conhecidas
 
 Esta seção é deliberadamente literal sobre o estado atual do código.
 
-### 4.1 `aluno_existe/1` usa átomo no lugar de variável
+### 4.1 `subconjunto_com_credito/3` não tem poda
 
-`src/elegibilidade.pl:2` — a cabeça é `aluno_existe(aluno)` e o corpo é
-`cursou(aluno, _)`, com `aluno` em minúscula. Em Prolog isso é o **átomo**
-`aluno`, não a variável `Aluno`. Como não existe nenhum fato
-`cursou(aluno, _)`, o predicado falha para qualquer entrada. Efeito em cascata:
-`prerequisitos_ok/2`, `pode_cursar/2` e `disciplinas_liberadas/2` falham para
-todos os três alunos de teste. A forma correta é
-`aluno_existe(Aluno) :- cursou(Aluno, _), !.`
-
-### 4.2 `disciplinas_pendentes/2` chama predicado inexistente
-
-`src/elegibilidade.pl:33-41` — o corpo do `findall/3` chama `obrigatorio/1`,
-que não está definido em nenhuma camada, e usa o átomo `disciplina` como
-template em vez de uma variável. A consulta levanta
-`existence_error(procedure, obrigatorio/1)`. O predicado deveria filtrar por
-`disciplina(D, obrigatoria, _, _)` e negar `cursou(Aluno, D)`.
-
-### 4.3 `creditos_cursados/2` chama predicados inexistentes
-
-`src/elegibilidade.pl:44-53` — chama `creditos/2` (não definido; os créditos
-estão no 3º argumento de `disciplina/4`) e `sum_lista/2` (o predicado nativo do
-SWI é `sum_list/2`). Também usa o átomo `disciplina` no lugar de variável.
-
-### 4.4 `demo/0` itera sobre `aluno/1`, que não existe
-
-`src/main.pl:10` — o `forall/2` da demonstração percorre `aluno(Aluno)`, mas a
-Camada 1 não define `aluno/1`. A alternativa sem mudar a Camada 1 é
-`setof(A, D^cursou(A, D), Alunos)`.
-
-### 4.5 O caso base de `gerar_trilha/5` falha sempre
-
-`src/trilhas.pl:16` — `gerar_trilha([], _, _, _, []) :- false.` O `false` no
-corpo torna o caso base impossível de satisfazer, então nenhuma recursão chega
-a fechar e `trilha_valida/3` nunca produz uma trilha completa. O caso base
-correto é o fato puro `gerar_trilha([], _, _, _, []).` — lista de pendentes
-vazia significa trilha concluída.
-
-### 4.6 Limite de semestres fixo em 6 e não parametrizado
-
-`src/trilhas.pl:14` — `trilha_valida/3` passa `6` literal como limite. O
-enunciado sugere 12. Além de ser baixo demais para um aluno atrasado com teto
-de créditos apertado (podendo fazer a busca falhar por exaustão de profundidade
-em vez de por impossibilidade real), o valor deveria ser uma constante nomeada
-ou um argumento de `trilha_valida/4`.
-
-### 4.7 `subconjunto_com_credito/3` sem poda
-
-`src/trilhas.pl:31-38` — a enumeração incluir/pular gera, no pior caso, `2^n`
+`src/trilhas.pl` — a enumeração incluir/pular gera, no pior caso, `2^n`
 subconjuntos para `n` disciplinas liberadas. Não há poda por créditos mínimos
 nem preferência por semestres "cheios", e semestres vazios só são descartados
-depois de gerados (`Semestre \= []` em `gerar_trilha/5`). Com a base atual isso
-é tolerável; com uma grade completa de 8 semestres, não seria.
+depois de gerados (`Semestre \= []` em `gerar_trilha/5`). Com 20 disciplinas e
+o limite de `max_semestres(12)` isso é tolerável; com uma grade completa de 8
+semestres e teto de créditos folgado, o custo de `findall/3` sobre
+`trilha_valida/3` cresceria rápido.
 
-### 4.8 `prerequisito_transitivo/2` não tem conjunto de visitados
+### 4.2 Trilhas enumeradas incluem permutações equivalentes
 
-`src/trilhas.pl:1-6` — a recursão é bem fundada **apenas** sobre base acíclica.
-Se a base contiver um ciclo, `prerequisito_transitivo/2` entra em recursão
-infinita, e `existe_ciclo/1` trava em vez de responder `true`. Ou seja: na base
-atual (acíclica, 3 fatos `prerequisito/2`) o predicado funciona, mas ele não
-cumpre o papel de **detectar** dado malformado, que é justamente o cenário para
-o qual foi escrito. A correção é carregar uma lista de visitados e falhar (ou
-sinalizar) ao reencontrar um nó, com um predicado auxiliar de aridade 3.
+`trilha_valida/3` trata a trilha como sequência **ordenada** de semestres, então
+distribuir três disciplinas como `[[a],[b,c]]` e `[[b,c],[a]]` conta como duas
+trilhas distintas — mesmo quando nenhuma restrição de pré-requisito distingue as
+duas. Isso infla a contagem de `findall/3`. Não é incorreto (as duas sequências
+são de fato válidas e distintas no tempo), mas o número total de trilhas é maior
+do que a intuição de "formas realmente diferentes de se formar" sugere.
 
-### 4.9 Divergências na base de fatos
+### 4.3 `aluno_existe/1` não distingue aluno novo de aluno inexistente
 
-- `src/curriculum.pl:19` — `criacao_de_trilhas_sonoras_para_jogos` está
-  cadastrada com tipo `eletivas` (plural), fora do domínio
-  `{obrigatoria, eletiva}`. Qualquer consulta que filtre por `eletiva` ignora
-  essa disciplina.
-- `src/curriculum.pl:16` — `game_desing` (grafia de `game_design`). Não quebra
-  nada, mas o átomo está escrito errado em todas as referências.
+`src/elegibilidade.pl` — a guarda testa a presença de ao menos um fato
+`cursou/2`. Um calouro real, matriculado e sem nenhuma disciplina cursada, é
+indistinguível de um aluno que não existe: ambos fazem as consultas falharem.
+Para o escopo deste trabalho é aceitável — os três alunos de teste têm
+histórico — mas a modelagem correta exigiria um fato `aluno/1` explícito na
+Camada 1.
 
-### 4.10 `tests/consultas_teste.pl` ainda está vazio
+### 4.4 `tests/consultas_teste.pl` está vazio
 
-Os casos de teste obrigatórios da Seção 8 do enunciado — incluindo o arquivo
-separado com `prerequisito/2` circular proposital para exercitar
-`existe_ciclo/1` — não foram escritos.
+Os casos de teste da Seção 8 do enunciado — incluindo o arquivo separado com
+`prerequisito/2` circular proposital para exercitar `existe_ciclo/1` — ainda não
+foram escritos. `demo/0` cobre as três camadas na prática, mas não é uma bateria
+de testes com resultado esperado declarado.
 
-### 4.11 Só existe uma cadeia de pré-requisitos
+O fecho transitivo **já está preparado** para o teste de ciclo: a lista de
+visitados (Seção 3.1) garante que `existe_ciclo/1` responda `true` em vez de
+travar o interpretador.
 
-A base tem 3 fatos `prerequisito/2`, todos na mesma cadeia linear. Nenhuma
-disciplina tem **múltiplos** pré-requisitos diretos, então o `forall/2` de
-`prerequisitos_ok/2` nunca é testado com mais de um item, e o fecho transitivo
-nunca precisa lidar com caminhos convergentes (onde `setof/3` faria diferença
-real sobre `findall/3`).
+### 4.5 Só existe uma cadeia de pré-requisitos
 
-### 4.12 Sem modelagem de equivalência entre currículos
+A base tem 3 fatos `prerequisito/2`, todos na mesma cadeia linear:
+
+```
+grafos -> modelagem -> discreta -> logica_matematica
+```
+
+Nenhuma disciplina tem **múltiplos** pré-requisitos diretos, então o `forall/2`
+de `prerequisitos_ok/2` nunca é exercitado com mais de um item, e o fecho
+transitivo nunca precisa lidar com caminhos convergentes — que é o cenário em
+que a deduplicação de `setof/3` faria diferença real sobre `findall/3`.
+
+### 4.6 Históricos de teste não respeitam os próprios pré-requisitos
+
+`julia` cursou `modelagem_de_fenomenos_fisicos` e
+`resolucao_de_problemas_com_grafos` sem ter cursado
+`resolucao_de_problemas_de_natureza_discreta`, que é pré-requisito transitivo
+das duas. Isso é proposital para o perfil "com DP", e o sistema lida com a
+inconsistência sem quebrar (ver Seção 3.5), mas significa que o histórico não é
+uma base válida para inferir que os pré-requisitos foram respeitados no passado.
+Não há predicado que valide a consistência de um `cursou/2` contra a grade.
+
+### 4.7 Sem modelagem de equivalência entre currículos
 
 O enunciado cita equivalência de disciplinas entre grades antiga e nova como
 exemplo de decisão em aberto. Não modelamos isso: `cursou/2` é comparado por
@@ -352,22 +369,39 @@ identidade de átomo. Uma extensão natural seria um fato
 `equivale(DisciplinaAntiga, DisciplinaNova)` e uma regra `cursou_equivalente/2`
 que fecha por essa relação — deliberadamente fora do escopo desta entrega.
 
-### 4.13 Sem nota, reprovação, co-requisito ou piso de créditos
+### 4.8 Sem nota, reprovação, co-requisito ou piso de créditos
 
 O sistema conhece apenas "cursou" ou "não cursou". Não há nota, não há
 reprovação (uma disciplina cursada é sempre aprovada), não há co-requisito
 (disciplinas que devem ser feitas no mesmo semestre) nem piso de créditos por
-semestre.
+semestre. `trilha_valida/3` também ignora o `SemestreSugerido` da grade — ele é
+dado descritivo, não restrição.
+
+### 4.9 Eletivas ficam fora da trilha
+
+`trilha_valida/3` parte de `disciplinas_pendentes/2`, que só considera
+obrigatórias. A trilha gerada é, portanto, o caminho mínimo até cumprir as
+obrigatórias, não até a integralização real do curso (que normalmente exige um
+número mínimo de créditos eletivos). Foi uma escolha consciente: o enunciado
+define `disciplinas_pendentes/2` como "todas as obrigatórias ainda não
+cursadas", e acoplar exigência de créditos eletivos exigiria um dado que a base
+não tem.
 
 ---
 
 ## 5. Decisões em aberto
 
-- **Fato `aluno/1` explícito na Camada 1.** Resolveria a limitação 2.4 (aluno
-  novo sem histórico) e a 4.4 (`demo/0`), ao custo de um dado redundante que
-  precisa ser mantido em sincronia com `cursou/2`.
-- **Constante nomeada para o limite de semestres.** Um fato
-  `max_semestres(12).` na Camada 1 deixaria a rede de segurança da Seção 3.4
-  explícita e ajustável sem editar a Camada 3.
-- **`trilha_valida/4` com o limite como argumento.** Permitiria demonstrar, em
-  teste, que a busca de fato para quando o limite se esgota.
+- **Fato `aluno/1` explícito na Camada 1.** Resolveria a limitação 4.3. Hoje a
+  lista de alunos é derivada em `main.pl` por
+  `setof(A, D^cursou(A, D), Alunos)`, o que evita dado redundante mas não
+  representa aluno sem histórico. O custo do fato explícito é mantê-lo em
+  sincronia com `cursou/2`.
+- **Poda em `subconjunto_com_credito/3`.** Exigir que o semestre use pelo menos
+  um piso de créditos cortaria a maior parte dos subconjuntos triviais
+  (limitação 4.1) e reduziria a inflação de trilhas da limitação 4.2.
+- **Trilha como conjunto de semestres, não sequência.** Normalizar a ordem dos
+  semestres eliminaria as permutações equivalentes da limitação 4.2, ao custo de
+  perder a noção de "qual semestre vem primeiro" quando ela de fato importa.
+- **`trilha_valida/4` com o limite como argumento.** Hoje o limite vem sempre de
+  `max_semestres/1`. Recebê-lo por argumento permitiria demonstrar, em teste,
+  que a busca de fato para quando o limite se esgota.

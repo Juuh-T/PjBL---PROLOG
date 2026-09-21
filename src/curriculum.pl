@@ -13,10 +13,10 @@ disciplina(modelagem_de_fenomenos_fisicos, obrigatoria, 4, 3). %12
 disciplina(clinica_de_tic, obrigatoria, 2, 3). %13
 disciplina(seguranca_da_informacao, obrigatoria, 4, 3). %14
 disciplina(resolucao_de_problemas_com_grafos, obrigatoria, 4, 4). %15
-disciplina(game_desing, eletiva, 2, 4). %16
+disciplina(game_design, eletiva, 2, 4). %16
 disciplina(introducao_a_criptografia, eletiva, 2, 5). %17
 disciplina(ciencias_forenses, eletiva, 2, 5). %18
-disciplina(criacao_de_trilhas_sonoras_para_jogos, eletivas, 2, 6). %19
+disciplina(criacao_de_trilhas_sonoras_para_jogos, eletiva, 2, 6). %19
 disciplina(astrologia_para_todos, eletiva, 3, 6). %20
 
 
@@ -77,7 +77,7 @@ cursou(caio, modelagem_de_fenomenos_fisicos).
 cursou(caio, clinica_de_tic).
 cursou(caio, seguranca_da_informacao).
 cursou(caio, resolucao_de_problemas_com_grafos).
-cursou(caio, game_desing).
+cursou(caio, game_design).
 cursou(caio, introducao_a_criptografia).
 cursou(caio, ciencias_forenses).
 cursou(caio, criacao_de_trilhas_sonoras_para_jogos).

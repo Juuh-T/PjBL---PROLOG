@@ -105,11 +105,19 @@ Listar só as eletivas:
 ### Camada 2 — Regras de elegibilidade
 
 ```prolog
+?- alunos(L).
 ?- prerequisitos_ok(eduardo, resolucao_de_problemas_com_grafos).
 ?- pode_cursar(julia, resolucao_de_problemas_de_natureza_discreta).
 ?- disciplinas_liberadas(eduardo, L).
 ?- disciplinas_pendentes(julia, L).
 ?- creditos_cursados(caio, Total).
+```
+
+Consulta com aluno inexistente falha limpo, sem exceção:
+
+```prolog
+?- disciplinas_liberadas(fulano, L).
+false.
 ```
 
 `pode_cursar/2` é o predicado onde a negação por falha é decisiva: ele exige
@@ -154,7 +162,13 @@ Múltiplas trilhas válidas para o mesmo aluno:
 ```
 
 A busca de `trilha_valida/3` tem um limite de semestres simulados como rede de
-segurança contra explosão combinatória — ver `docs/decisoes.md`.
+segurança contra explosão combinatória. O limite fica no fato `max_semestres/1`,
+no topo de `src/trilhas.pl`:
+
+```prolog
+?- max_semestres(N).
+N = 12.
+```
 
 ## Testes
 
