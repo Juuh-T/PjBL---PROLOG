@@ -1,23 +1,5 @@
-% ============================================================
-% PONTO DE ENTRADA
-%
-% As camadas se carregam em cascata: main -> trilhas ->
-% elegibilidade -> curriculum. Basta consultar este arquivo para
-% ter o projeto inteiro na base.
-%
-% Uso:  swipl src/main.pl
-%       ?- demo.
-% ============================================================
-
 :- consult('trilhas.pl').
 
-
-% disciplinas_por_semestre(?Semestre, -Lista)
-%
-% Todas as disciplinas de um semestre sugerido. Consulta de apoio da
-% Camada 1 - fica aqui, e nao em curriculum.pl, porque aquela camada
-% e composta so de fatos.
-% Semestre sem nenhuma disciplina devolve [] em vez de falhar.
 disciplinas_por_semestre(Semestre, Lista) :-
     findall(
         Disciplina,
@@ -25,21 +7,9 @@ disciplinas_por_semestre(Semestre, Lista) :-
         Lista
     ).
 
-
-% alunos(-Alunos)
-%
-% A Camada 1 nao tem um fato aluno/1: a lista de alunos e derivada
-% dos fatos cursou/2. Aqui setof/3 e a escolha certa (e nao
-% findall/3) porque queremos o conjunto ordenado e sem repeticao.
-% O "Disciplina^" marca Disciplina como existencial - sem isso,
-% setof/3 agruparia um resultado por disciplina em vez de devolver
-% um unico conjunto de alunos.
 alunos(Alunos) :-
     setof(Aluno, Disciplina^cursou(Aluno, Disciplina), Alunos).
 
-
-% demo/0
-% Exercita, em sequencia, as tres camadas.
 demo :-
     writeln('=== DEMONSTRACAO: CURRICULUM ADVISOR ==='),
     nl,
@@ -47,10 +17,6 @@ demo :-
     demo_camada2,
     demo_camada3.
 
-
-% ------------------------------------------------------------
-% Camada 1: base de fatos
-% ------------------------------------------------------------
 demo_camada1 :-
     writeln('--- CAMADA 1: BASE DE FATOS ---'),
     forall(
@@ -63,10 +29,6 @@ demo_camada1 :-
     format('Eletivas: ~w~n', [Eletivas]),
     nl.
 
-
-% ------------------------------------------------------------
-% Camada 2: regras de elegibilidade
-% ------------------------------------------------------------
 demo_camada2 :-
     writeln('--- CAMADA 2: REGRAS DE ELEGIBILIDADE ---'),
     alunos(Alunos),
@@ -83,10 +45,6 @@ demo_camada2 :-
     ),
     nl.
 
-
-% ------------------------------------------------------------
-% Camada 3: fecho transitivo e trilhas
-% ------------------------------------------------------------
 demo_camada3 :-
     writeln('--- CAMADA 3: FECHO TRANSITIVO E TRILHAS ---'),
     Alvo = resolucao_de_problemas_com_grafos,
@@ -100,11 +58,6 @@ demo_camada3 :-
     demo_trilha(julia, 20),
     demo_trilha(eduardo, 20).
 
-
-% demo_trilha(+Aluno, +MaxCreditos)
-%
-% Mostra a primeira trilha valida e quantas existem no total, dentro
-% do limite de max_semestres/1.
 demo_trilha(Aluno, MaxCreditos) :-
     format('Trilha para ~w (teto de ~w creditos por semestre):~n', [Aluno, MaxCreditos]),
     (   trilha_valida(Aluno, MaxCreditos, Trilha)
@@ -115,7 +68,6 @@ demo_trilha(Aluno, MaxCreditos) :-
     length(Trilhas, Total),
     format('  Total de trilhas validas: ~w~n', [Total]),
     nl.
-
 
 imprimir_semestres([], _).
 imprimir_semestres([Semestre|Resto], N) :-

@@ -8,6 +8,10 @@ date: 2026-09-21
 Documento exigido pela Seção 7 do enunciado. Registra **por que** a base foi
 modelada do jeito que foi e **o que o sistema ainda não faz**.
 
+> Os arquivos `.pl` não levam comentários: toda a justificativa de projeto está
+> reunida aqui, e as seções abaixo citam os predicados pelo nome e aridade para
+> que a leitura do código possa ser acompanhada em paralelo.
+
 ---
 
 ## 1. Camada 1 — Base de fatos
@@ -261,13 +265,13 @@ Consequência aceita: cópia de listas a cada semestre simulado. Para uma grade
 de 20 disciplinas o custo é irrelevante perto da correção que se ganha.
 
 **Onde `assert/retract` aparece, e por que ali é legítimo:** em
-`tests/consultas_teste.pl`, para provar que `\+ cursou/2` é decisivo, e em
-`tests/ciclo_teste.pl`, para inserir o ciclo proposital. A diferença é que ali
-a mutação **é o objeto do teste**, não um mecanismo de busca: ela acontece fora
-de qualquer ponto de escolha, e cada `assertz` do primeiro arquivo tem seu
-`retract` explícito, com um teste depois confirmando que a base voltou ao
-estado original. Nada disso vale dentro de `gerar_trilha/5`, onde o
-backtracking é justamente o que não desfaria a alteração.
+`tests/consultas_teste.pl`, duas vezes — para provar que `\+ cursou/2` é
+decisivo, e para inserir o ciclo proposital. A diferença é que ali a mutação
+**é o objeto do teste**, não um mecanismo de busca: ela acontece fora de
+qualquer ponto de escolha, cada `assertz` tem seu `retract` explícito, e uma
+consulta posterior confirma que a base voltou ao estado original. Nada disso
+vale dentro de `gerar_trilha/5`, onde o backtracking é justamente o que não
+desfaria a alteração.
 
 ### 3.4 Limite de semestres simulados como rede de segurança
 
@@ -349,11 +353,11 @@ Camada 1.
 
 ### 4.4 Os testes dependem de valores esperados fixos
 
-`tests/consultas_teste.pl` compara contra constantes escritas à mão: 20
-disciplinas, 73 créditos para `caio`, 13 trilhas para `julia`, e assim por
-diante. Isso torna os testes sensíveis à base — acrescentar uma disciplina ou
-um `cursou/2` quebra vários deles de uma vez, mesmo sem nenhum defeito na
-lógica.
+`tests/consultas_teste.pl` compara contra constantes escritas à mão: as cinco
+disciplinas do semestre 1, 54 créditos para `eduardo`, 13 trilhas para `julia`,
+e assim por diante. Isso torna os testes sensíveis à base — acrescentar uma
+disciplina ou um `cursou/2` quebra vários deles de uma vez, mesmo sem nenhum
+defeito na lógica.
 
 Foi uma escolha consciente: valores fixos falham alto e mostram exatamente o
 que mudou, enquanto um teste que recalcula o esperado a partir da própria base

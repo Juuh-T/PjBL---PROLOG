@@ -37,8 +37,7 @@ PjBL---PROLOG/
 │   ├── trilhas.pl         (Camada 3: recursão + backtracking)
 │   └── main.pl            (consultas de demonstração, demo/0)
 ├── tests/
-│   ├── consultas_teste.pl (bateria de consultas com resultado esperado)
-│   └── ciclo_teste.pl     (base com pré-requisito circular proposital)
+│   └── consultas_teste.pl (bateria de consultas com resultado esperado)
 ├── docs/
 │   └── decisoes.md        (decisões de modelagem + limitações conhecidas)
 └── README.md
@@ -179,12 +178,7 @@ N = 12.
 
 ## Testes
 
-São dois arquivos, que **não devem ser carregados juntos** — o segundo insere
-pré-requisitos circulares na base de propósito.
-
-### Bateria principal
-
-43 testes cobrindo as três camadas, cada um com o resultado esperado declarado:
+Bateria única, com o resultado esperado declarado em cada consulta:
 
 ```bash
 swipl tests/consultas_teste.pl
@@ -194,31 +188,26 @@ swipl tests/consultas_teste.pl
 ?- testes.
 ```
 
-Cobre: consulta por semestre sugerido e os mínimos da grade (Camada 1);
-liberadas/pendentes para os três alunos, créditos, o caso em que `\+ cursou/2`
-decide o resultado, e falha limpa para aluno ou disciplina inexistente
-(Camada 2); fecho transitivo na cadeia de profundidade 3, trilha completa até a
-formatura com validação de ordem e de teto de créditos, enumeração de múltiplas
-trilhas, e a rede de segurança de semestres (Camada 3).
+Saída esperada ao final: `=== TODAS AS CONSULTAS DERAM O RESULTADO ESPERADO ===`.
 
-Saída esperada ao final: `=== TODOS OS TESTES PASSARAM ===`.
+Cobre, nesta ordem:
 
-### Detecção de ciclo
+| Bloco | O que exercita |
+|---|---|
+| Camada 1 | disciplinas de um semestre sugerido, e semestre vazio devolvendo `[]` |
+| Camada 2 | liberadas e pendentes para `eduardo` e `caio` (resultados opostos), créditos cursados, e o caso em que `\+ cursou/2` decide o resultado |
+| Camada 3 | fecho transitivo na cadeia de profundidade 3, trilha para `eduardo` e `julia`, enumeração de múltiplas trilhas, e trilha completa até a formatura com validação de ordem, teto de créditos e cobertura das pendências |
+| Detecção de ciclo | `prerequisito/2` circular inserido de propósito |
+| Casos de borda | aluno e disciplina inexistentes, e teto de créditos impossível |
 
-Arquivo separado, com `prerequisito/2` circular inserido de propósito:
+O bloco de ciclo vem **por último de propósito**: ele insere pré-requisitos
+circulares na base, então só roda depois que todas as consultas sobre a grade
+limpa terminaram. Os fatos circulares são removidos no fim, e uma consulta final
+confirma a restauração — `?- testes.` pode ser repetido sem reiniciar o
+interpretador.
 
-```bash
-swipl tests/ciclo_teste.pl
-```
-
-```prolog
-?- teste_ciclo.
-```
-
-Verifica que `existe_ciclo/1` detecta ciclo de comprimento 3 e de comprimento 1,
-não dá falso positivo em disciplina que apenas *depende* do ciclo sem pertencer
-a ele, e que o fecho transitivo termina sobre a base malformada em vez de travar
-o interpretador.
+O mesmo vale para o teste de `\+ cursou/2`, que insere e remove um fato do
+histórico de `eduardo`.
 
 ## Documentação
 
