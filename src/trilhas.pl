@@ -1,3 +1,5 @@
+:- consult('elegibilidade.pl').
+
 % ============================================================
 % CAMADA 3 - FECHO TRANSITIVO E GERACAO DE TRILHAS
 %

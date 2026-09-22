@@ -1,3 +1,5 @@
+:- consult('curriculum.pl').
+
 % ============================================================
 % CAMADA 2 - REGRAS DE ELEGIBILIDADE
 %
