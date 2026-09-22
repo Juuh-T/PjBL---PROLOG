@@ -37,7 +37,7 @@ PjBL---PROLOG/
 │   ├── trilhas.pl         (Camada 3: recursão + backtracking)
 │   └── main.pl            (consultas de demonstração, demo/0)
 ├── tests/
-│   └── consultas_teste.pl (bateria de consultas com resultado esperado)
+│   └── consultas_teste.pl (roteiro de consultas com resultado esperado)
 ├── docs/
 │   └── decisoes.md        (decisões de modelagem + limitações conhecidas)
 └── README.md
@@ -178,36 +178,29 @@ N = 12.
 
 ## Testes
 
-Bateria única, com o resultado esperado declarado em cada consulta:
+`tests/consultas_teste.pl` é o **roteiro** de consultas de teste: lista, camada
+por camada, as consultas a digitar e o resultado esperado de cada uma. As
+consultas são executadas manualmente no terminal, depois de carregar o projeto:
 
 ```bash
-swipl tests/consultas_teste.pl
+swipl src/main.pl
 ```
 
-```prolog
-?- testes.
-```
+O roteiro cobre:
 
-Saída esperada ao final: `=== TODAS AS CONSULTAS DERAM O RESULTADO ESPERADO ===`.
-
-Cobre, nesta ordem:
-
-| Bloco | O que exercita |
+| Camada | Consultas |
 |---|---|
-| Camada 1 | disciplinas de um semestre sugerido, e semestre vazio devolvendo `[]` |
-| Camada 2 | liberadas e pendentes para `eduardo` e `caio` (resultados opostos), créditos cursados, e o caso em que `\+ cursou/2` decide o resultado |
-| Camada 3 | fecho transitivo na cadeia de profundidade 3, trilha para `eduardo` e `julia`, enumeração de múltiplas trilhas, e trilha completa até a formatura com validação de ordem, teto de créditos e cobertura das pendências |
-| Detecção de ciclo | `prerequisito/2` circular inserido de propósito |
-| Casos de borda | aluno e disciplina inexistentes, e teto de créditos impossível |
+| 1 | `disciplinas_por_semestre/2` para um semestre sugerido |
+| 2 | `disciplinas_liberadas/2` e `disciplinas_pendentes/2` para `eduardo` e `caio`, que dão resultados opostos, e o caso em que `\+ cursou/2` decide o resultado de `pode_cursar/2` |
+| 3 | `prerequisito_transitivo/2` na cadeia de profundidade 3, `trilha_valida/3` para `eduardo` e `julia`, e a detecção de ciclo |
 
-O bloco de ciclo vem **por último de propósito**: ele insere pré-requisitos
-circulares na base, então só roda depois que todas as consultas sobre a grade
-limpa terminaram. Os fatos circulares são removidos no fim, e uma consulta final
-confirma a restauração — `?- testes.` pode ser repetido sem reiniciar o
-interpretador.
+Dois blocos do roteiro pedem que fatos sejam acrescentados à base antes da
+consulta — o `cursou/2` que torna a negação decisiva, na Camada 2, e os três
+`prerequisito/2` circulares da detecção de ciclo. O próprio roteiro indica onde
+inseri-los.
 
-O mesmo vale para o teste de `\+ cursou/2`, que insere e remove um fato do
-histórico de `eduardo`.
+> Os `prerequisito/2` circulares deixam a base malformada de propósito. Depois
+> de usá-los, reinicie o interpretador antes de rodar as outras consultas.
 
 ## Documentação
 

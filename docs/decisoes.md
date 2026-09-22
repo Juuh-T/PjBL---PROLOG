@@ -8,9 +8,9 @@ date: 2026-09-21
 Documento exigido pela Seção 7 do enunciado. Registra **por que** a base foi
 modelada do jeito que foi e **o que o sistema ainda não faz**.
 
-> Os arquivos `.pl` não levam comentários: toda a justificativa de projeto está
-> reunida aqui, e as seções abaixo citam os predicados pelo nome e aridade para
-> que a leitura do código possa ser acompanhada em paralelo.
+> Os arquivos de `src/` não levam comentários: toda a justificativa de projeto
+> está reunida aqui, e as seções abaixo citam os predicados pelo nome e aridade
+> para que a leitura do código possa ser acompanhada em paralelo.
 
 ---
 
@@ -264,14 +264,10 @@ construção.
 Consequência aceita: cópia de listas a cada semestre simulado. Para uma grade
 de 20 disciplinas o custo é irrelevante perto da correção que se ganha.
 
-**Onde `assert/retract` aparece, e por que ali é legítimo:** em
-`tests/consultas_teste.pl`, duas vezes — para provar que `\+ cursou/2` é
-decisivo, e para inserir o ciclo proposital. A diferença é que ali a mutação
-**é o objeto do teste**, não um mecanismo de busca: ela acontece fora de
-qualquer ponto de escolha, cada `assertz` tem seu `retract` explícito, e uma
-consulta posterior confirma que a base voltou ao estado original. Nada disso
-vale dentro de `gerar_trilha/5`, onde o backtracking é justamente o que não
-desfaria a alteração.
+Nenhum predicado do projeto usa `assert/1` ou `retract/1`. Os dois pontos do
+roteiro de testes que mexem na base — o `cursou/2` que torna a negação decisiva
+e os `prerequisito/2` circulares — são fatos acrescentados à mão, fora de
+qualquer busca, e não passam por `gerar_trilha/5`.
 
 ### 3.4 Limite de semestres simulados como rede de segurança
 
@@ -351,22 +347,23 @@ Para o escopo deste trabalho é aceitável — os três alunos de teste têm
 histórico — mas a modelagem correta exigiria um fato `aluno/1` explícito na
 Camada 1.
 
-### 4.4 Os testes dependem de valores esperados fixos
+### 4.4 Os testes são um roteiro manual, não uma bateria automatizada
 
-`tests/consultas_teste.pl` compara contra constantes escritas à mão: as cinco
-disciplinas do semestre 1, 54 créditos para `eduardo`, 13 trilhas para `julia`,
-e assim por diante. Isso torna os testes sensíveis à base — acrescentar uma
-disciplina ou um `cursou/2` quebra vários deles de uma vez, mesmo sem nenhum
-defeito na lógica.
+`tests/consultas_teste.pl` documenta as consultas de cada camada e o resultado
+esperado, mas as consultas são digitadas à mão no terminal: o arquivo não é
+carregável com `consult/1`, porque em Prolog um termo no topo de um arquivo é
+definição de cláusula e não pergunta. Rodá-lo tentaria acrescentar cláusulas a
+`disciplinas_liberadas/2`, `cursou/2` e `prerequisito/2`, que já estão
+definidos nas camadas.
 
-Foi uma escolha consciente: valores fixos falham alto e mostram exatamente o
-que mudou, enquanto um teste que recalcula o esperado a partir da própria base
-passaria a validar apenas a consistência interna do código, não o resultado.
-A contrapartida é manutenção quando a grade evoluir.
+Consequências: não há como rodar tudo de uma vez nem verificar automaticamente
+que nada regrediu, e os dois blocos que alteram a base (o `cursou/2` da negação
+decisiva e os `prerequisito/2` circulares) exigem reiniciar o interpretador
+depois, já que nada os desfaz.
 
-Os testes de **estrutura** da trilha (ordem dos pré-requisitos, teto de
-créditos, cobertura exata das pendências) não têm esse problema — são
-invariantes verificados sobre a trilha gerada, não valores esperados.
+Uma versão executável exigiria envolver cada consulta num predicado que a
+executa e compara com o esperado, declarar `cursou/2` e `prerequisito/2` como
+dinâmicos, e desfazer com `retract/1` o que for inserido.
 
 ### 4.5 Só existe uma cadeia de pré-requisitos
 
