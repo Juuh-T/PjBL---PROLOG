@@ -92,6 +92,17 @@ encadeamento, não apenas o caso base.
 O histórico é um fato `cursou/2` por par aluno/disciplina, pelo mesmo motivo do
 item 1.1.
 
+### 1.7 `disciplinas_por_semestre/2` fica em `main.pl`, não em `curriculum.pl`
+
+O enunciado define a Camada 1 como "apenas fatos (sem regras)". A consulta que
+lista as disciplinas de um semestre sugerido é uma regra, então não pode morar
+em `curriculum.pl` sem violar essa separação — mesmo sendo, conceitualmente,
+uma consulta sobre a Camada 1.
+
+Colocamos em `main.pl`, que o enunciado descreve como o arquivo de consultas de
+demonstração. Ela devolve `[]` para um semestre sem disciplinas em vez de
+falhar, pelo mesmo motivo do `findall/3` da Seção 2.3.
+
 ---
 
 ## 2. Camada 2 — Regras de elegibilidade
@@ -249,6 +260,15 @@ construção.
 Consequência aceita: cópia de listas a cada semestre simulado. Para uma grade
 de 20 disciplinas o custo é irrelevante perto da correção que se ganha.
 
+**Onde `assert/retract` aparece, e por que ali é legítimo:** em
+`tests/consultas_teste.pl`, para provar que `\+ cursou/2` é decisivo, e em
+`tests/ciclo_teste.pl`, para inserir o ciclo proposital. A diferença é que ali
+a mutação **é o objeto do teste**, não um mecanismo de busca: ela acontece fora
+de qualquer ponto de escolha, e cada `assertz` do primeiro arquivo tem seu
+`retract` explícito, com um teste depois confirmando que a base voltou ao
+estado original. Nada disso vale dentro de `gerar_trilha/5`, onde o
+backtracking é justamente o que não desfaria a alteração.
+
 ### 3.4 Limite de semestres simulados como rede de segurança
 
 `gerar_trilha/5` carrega um contador `SemestresRestantes` que decresce a cada
@@ -327,16 +347,22 @@ Para o escopo deste trabalho é aceitável — os três alunos de teste têm
 histórico — mas a modelagem correta exigiria um fato `aluno/1` explícito na
 Camada 1.
 
-### 4.4 `tests/consultas_teste.pl` está vazio
+### 4.4 Os testes dependem de valores esperados fixos
 
-Os casos de teste da Seção 8 do enunciado — incluindo o arquivo separado com
-`prerequisito/2` circular proposital para exercitar `existe_ciclo/1` — ainda não
-foram escritos. `demo/0` cobre as três camadas na prática, mas não é uma bateria
-de testes com resultado esperado declarado.
+`tests/consultas_teste.pl` compara contra constantes escritas à mão: 20
+disciplinas, 73 créditos para `caio`, 13 trilhas para `julia`, e assim por
+diante. Isso torna os testes sensíveis à base — acrescentar uma disciplina ou
+um `cursou/2` quebra vários deles de uma vez, mesmo sem nenhum defeito na
+lógica.
 
-O fecho transitivo **já está preparado** para o teste de ciclo: a lista de
-visitados (Seção 3.1) garante que `existe_ciclo/1` responda `true` em vez de
-travar o interpretador.
+Foi uma escolha consciente: valores fixos falham alto e mostram exatamente o
+que mudou, enquanto um teste que recalcula o esperado a partir da própria base
+passaria a validar apenas a consistência interna do código, não o resultado.
+A contrapartida é manutenção quando a grade evoluir.
+
+Os testes de **estrutura** da trilha (ordem dos pré-requisitos, teto de
+créditos, cobertura exata das pendências) não têm esse problema — são
+invariantes verificados sobre a trilha gerada, não valores esperados.
 
 ### 4.5 Só existe uma cadeia de pré-requisitos
 

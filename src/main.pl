@@ -1,14 +1,29 @@
 % ============================================================
 % PONTO DE ENTRADA
 %
-% Carrega as tres camadas na ordem (fatos -> regras -> trilhas)
-% e define a demonstracao demo/0.
+% As camadas se carregam em cascata: main -> trilhas ->
+% elegibilidade -> curriculum. Basta consultar este arquivo para
+% ter o projeto inteiro na base.
 %
 % Uso:  swipl src/main.pl
 %       ?- demo.
 % ============================================================
 
 :- consult('trilhas.pl').
+
+
+% disciplinas_por_semestre(?Semestre, -Lista)
+%
+% Todas as disciplinas de um semestre sugerido. Consulta de apoio da
+% Camada 1 - fica aqui, e nao em curriculum.pl, porque aquela camada
+% e composta so de fatos.
+% Semestre sem nenhuma disciplina devolve [] em vez de falhar.
+disciplinas_por_semestre(Semestre, Lista) :-
+    findall(
+        Disciplina,
+        disciplina(Disciplina, _, _, Semestre),
+        Lista
+    ).
 
 
 % alunos(-Alunos)
@@ -40,7 +55,7 @@ demo_camada1 :-
     writeln('--- CAMADA 1: BASE DE FATOS ---'),
     forall(
         between(1, 6, Semestre),
-        (   findall(D, disciplina(D, _, _, Semestre), Disciplinas),
+        (   disciplinas_por_semestre(Semestre, Disciplinas),
             format('Semestre ~w: ~w~n', [Semestre, Disciplinas])
         )
     ),

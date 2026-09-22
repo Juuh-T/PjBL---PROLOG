@@ -37,7 +37,8 @@ PjBL---PROLOG/
 │   ├── trilhas.pl         (Camada 3: recursão + backtracking)
 │   └── main.pl            (consultas de demonstração, demo/0)
 ├── tests/
-│   └── consultas_teste.pl (bateria de consultas com resultado esperado)
+│   ├── consultas_teste.pl (bateria de consultas com resultado esperado)
+│   └── ciclo_teste.pl     (base com pré-requisito circular proposital)
 ├── docs/
 │   └── decisoes.md        (decisões de modelagem + limitações conhecidas)
 └── README.md
@@ -45,8 +46,14 @@ PjBL---PROLOG/
 
 ## Como carregar
 
-`src/main.pl` é o ponto de entrada: ele faz o `consult` das três camadas na
-ordem correta (fatos → regras → trilhas).
+`src/main.pl` é o ponto de entrada. As camadas se carregam em cascata, cada uma
+consultando a anterior:
+
+```
+main.pl → trilhas.pl → elegibilidade.pl → curriculum.pl
+```
+
+Basta consultar `main.pl` para ter o projeto inteiro na base.
 
 A partir da raiz do repositório:
 
@@ -60,8 +67,8 @@ Ou, de dentro de uma sessão SWI-Prolog já aberta:
 ?- consult('src/main.pl').
 ```
 
-Os `:- consult(...)` dentro de `main.pl` usam caminhos relativos ao próprio
-arquivo, então carregar de qualquer diretório funciona.
+Os `:- consult(...)` usam caminhos relativos ao arquivo que os contém, então
+carregar de qualquer diretório funciona.
 
 Para rodar a demonstração das três camadas:
 
@@ -172,12 +179,46 @@ N = 12.
 
 ## Testes
 
-A bateria de consultas com resultados esperados fica em
-`tests/consultas_teste.pl`:
+São dois arquivos, que **não devem ser carregados juntos** — o segundo insere
+pré-requisitos circulares na base de propósito.
+
+### Bateria principal
+
+43 testes cobrindo as três camadas, cada um com o resultado esperado declarado:
+
+```bash
+swipl tests/consultas_teste.pl
+```
 
 ```prolog
-?- consult('tests/consultas_teste.pl').
+?- testes.
 ```
+
+Cobre: consulta por semestre sugerido e os mínimos da grade (Camada 1);
+liberadas/pendentes para os três alunos, créditos, o caso em que `\+ cursou/2`
+decide o resultado, e falha limpa para aluno ou disciplina inexistente
+(Camada 2); fecho transitivo na cadeia de profundidade 3, trilha completa até a
+formatura com validação de ordem e de teto de créditos, enumeração de múltiplas
+trilhas, e a rede de segurança de semestres (Camada 3).
+
+Saída esperada ao final: `=== TODOS OS TESTES PASSARAM ===`.
+
+### Detecção de ciclo
+
+Arquivo separado, com `prerequisito/2` circular inserido de propósito:
+
+```bash
+swipl tests/ciclo_teste.pl
+```
+
+```prolog
+?- teste_ciclo.
+```
+
+Verifica que `existe_ciclo/1` detecta ciclo de comprimento 3 e de comprimento 1,
+não dá falso positivo em disciplina que apenas *depende* do ciclo sem pertencer
+a ele, e que o fecho transitivo termina sobre a base malformada em vez de travar
+o interpretador.
 
 ## Documentação
 
