@@ -194,8 +194,9 @@ O roteiro cobre:
 | 2 | `disciplinas_liberadas/2` e `disciplinas_pendentes/2` para `eduardo` e `caio`, que dão resultados opostos, e o caso em que `\+ cursou/2` decide o resultado de `pode_cursar/2` |
 | 3 | `prerequisito_transitivo/2` na cadeia de profundidade 3, `trilha_valida/3` para `eduardo` e `julia`, e a detecção de ciclo |
 
-Dois blocos do roteiro pedem que fatos sejam acrescentados à base antes da
-consulta — o `cursou/2` que torna a negação decisiva, na Camada 2, e os três
+As consultas estão comentadas no arquivo: copie a que interessa e cole no
+prompt. Dois blocos do roteiro pedem que fatos sejam acrescentados à base antes
+da consulta — o `cursou/2` que torna a negação decisiva, na Camada 2, e os três
 `prerequisito/2` circulares da detecção de ciclo. O próprio roteiro indica onde
 inseri-los.
 

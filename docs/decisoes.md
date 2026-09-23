@@ -350,20 +350,25 @@ Camada 1.
 ### 4.4 Os testes são um roteiro manual, não uma bateria automatizada
 
 `tests/consultas_teste.pl` documenta as consultas de cada camada e o resultado
-esperado, mas as consultas são digitadas à mão no terminal: o arquivo não é
-carregável com `consult/1`, porque em Prolog um termo no topo de um arquivo é
-definição de cláusula e não pergunta. Rodá-lo tentaria acrescentar cláusulas a
-`disciplinas_liberadas/2`, `cursou/2` e `prerequisito/2`, que já estão
-definidos nas camadas.
+esperado, mas as consultas estão comentadas: são digitadas à mão no terminal.
+Precisam estar comentadas porque, em Prolog, um termo no topo de um arquivo é
+definição de cláusula e não pergunta — deixá-las soltas faria o carregamento
+tentar acrescentar cláusulas a `disciplinas_liberadas/2`, `cursou/2` e
+`prerequisito/2`, que já estão definidos nas camadas, e o SWI recusaria.
 
 Consequências: não há como rodar tudo de uma vez nem verificar automaticamente
 que nada regrediu, e os dois blocos que alteram a base (o `cursou/2` da negação
 decisiva e os `prerequisito/2` circulares) exigem reiniciar o interpretador
-depois, já que nada os desfaz.
+depois de usados, já que nada os desfaz.
 
 Uma versão executável exigiria envolver cada consulta num predicado que a
 executa e compara com o esperado, declarar `cursou/2` e `prerequisito/2` como
 dinâmicos, e desfazer com `retract/1` o que for inserido.
+
+A única cláusula viva do arquivo é `disciplinas_por_semestre/2`, que o roteiro
+manda acrescentar ao código. Ela também existe em `src/main.pl` (Seção 1.7);
+carregar os dois arquivos na mesma sessão faz o SWI avisar que o predicado foi
+redefinido.
 
 ### 4.5 Só existe uma cadeia de pré-requisitos
 
