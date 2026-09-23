@@ -22,10 +22,11 @@ O projeto é organizado em três camadas:
 
 ## Requisitos
 
-- [SWI-Prolog](https://www.swi-prolog.org/) (versão 8 ou superior).
-- Nenhuma biblioteca externa. Apenas predicados nativos e `library(lists)`,
-  autocarregada pelo SWI (`findall/3`, `forall/2`, `include/3`, `subtract/3`,
-  `member/2`, `append/3`).
+- [SWI-Prolog](https://www.swi-prolog.org/). Testado na versão 9.2.9.
+- Nenhuma biblioteca externa. Além dos predicados nativos (`findall/3`,
+  `setof/3`, `forall/2`, `memberchk/2`, `msort/2`), o projeto usa apenas
+  bibliotecas que o SWI autocarrega: `library(lists)` (`member/2`, `append/3`,
+  `subtract/3`, `sum_list/2`) e `library(apply)` (`include/3`).
 
 ## Estrutura do projeto
 
@@ -82,7 +83,7 @@ Três perfis diferentes, todos definidos por fatos `cursou/2` em
 
 | Aluno | Perfil | Situação |
 |---|---|---|
-| `julia` | Atrasada / com DP | Cursou 12 disciplinas, mas ficou com pendências de semestres anteriores (`raciocinio_algoritmo`, `arquitetura_de_banco_de_dados`) |
+| `julia` | Atrasada / com DP | Cursou 12 disciplinas, mas ficou com 3 pendências de semestres anteriores: `raciocinio_algoritmo`, `resolucao_de_problemas_de_natureza_discreta` e `arquitetura_de_banco_de_dados` |
 | `eduardo` | No ritmo da grade | Cursou 13 disciplinas, seguindo a ordem sugerida |
 | `caio` | Adiantado | Cursou as 20 disciplinas da base, incluindo todas as eletivas |
 

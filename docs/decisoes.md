@@ -351,10 +351,15 @@ Camada 1.
 
 `tests/consultas_teste.pl` documenta as consultas de cada camada e o resultado
 esperado, mas as consultas estão comentadas: são digitadas à mão no terminal.
+
 Precisam estar comentadas porque, em Prolog, um termo no topo de um arquivo é
-definição de cláusula e não pergunta — deixá-las soltas faria o carregamento
-tentar acrescentar cláusulas a `disciplinas_liberadas/2`, `cursou/2` e
-`prerequisito/2`, que já estão definidos nas camadas, e o SWI recusaria.
+definição de cláusula e não pergunta. Soltas, elas não seriam perguntas sobre a
+base — seriam **redefinições** dela. O SWI não recusa a carga: avisa
+`Redefined static procedure` e **substitui** o predicado inteiro. Na prática, um
+`cursou(eduardo, ...)` solto reduz os 45 fatos `cursou/2` da Camada 1 a um só, e
+um `prerequisito(teste_a, teste_b)` solto reduz os 3 fatos de pré-requisito a
+um. O arquivo carrega com sucesso e a base fica destruída em silêncio, o que é
+pior do que um erro.
 
 Consequências: não há como rodar tudo de uma vez nem verificar automaticamente
 que nada regrediu, e os dois blocos que alteram a base (o `cursou/2` da negação
